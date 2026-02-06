@@ -1,4 +1,5 @@
 import { Text, View } from "react-native";
+import { colors } from "../../lib/colors";
 
 //Home Tab
 export default function Home() {
@@ -8,7 +9,8 @@ export default function Home() {
         >
             <Text
             style={{fontSize:40,
-                fontWeight:700
+                fontWeight:700,
+                color:colors.text,
             }}>
                 Home
             </Text>

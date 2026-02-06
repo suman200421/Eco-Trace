@@ -4,17 +4,18 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Tabs } from "expo-router";
 import { View } from 'react-native';
+import { colors } from '../../lib/colors';
 
 export default function RootLayout() {
     return (
         <Tabs
             screenOptions={{
                 headerTitleAlign: "center",
-                headerStyle: { backgroundColor: "#ffffff" },
-                headerTitleStyle: { color: "#00003e" },
+                headerStyle: { backgroundColor: colors.bg },
+                headerTitleStyle: { color: colors.text },
                 tabBarStyle: {
-                    backgroundColor: "#ffffff",
-                    borderTopColor: "#00a341",
+                    backgroundColor: colors.bg,
+                    borderTopColor: colors.border,
                 },
                 headerStatusBarHeight: 14,
                 tabBarItemStyle: { paddingBottom: 10 },
@@ -52,7 +53,7 @@ export default function RootLayout() {
                                 width: 40,
                                 height: 40,
                                 borderRadius: 20,
-                                backgroundColor: "#03cea4",
+                                backgroundColor: colors.accent,
                                 alignItems: "center",
                                 justifyContent: "center",
                                 marginTop: 8,
