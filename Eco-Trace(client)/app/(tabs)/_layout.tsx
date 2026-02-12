@@ -28,7 +28,7 @@ export default function RootLayout() {
                 options={{
                     title: "Home",
                     tabBarIcon: ({ color, size }) => (
-                        <FontAwesome5 name="home" size={size} color="color" />
+                        <FontAwesome5 name="home" size={size} color={color} />
                     ),
                 }}
             />
@@ -38,7 +38,7 @@ export default function RootLayout() {
                 options={{
                     title: "Stats",
                     tabBarIcon: ({ color, size }) => (
-                        <Ionicons name="stats-chart" size={size} color="color" />
+                        <Ionicons name="stats-chart" size={size} color={color} />
                     ),
                 }}
             />
@@ -67,7 +67,6 @@ export default function RootLayout() {
                         </View>
                     ),
                 }}
-
             />
 
             <Tabs.Screen
@@ -75,7 +74,7 @@ export default function RootLayout() {
                 options={{
                     title: "Notifications",
                     tabBarIcon: ({ color, size }) => (
-                        <MaterialIcons name="notifications-active" size={size} color="color" />
+                        <MaterialIcons name="notifications-active" size={size} color={color} />
                     ),
                 }}
             />
@@ -85,11 +84,10 @@ export default function RootLayout() {
                 options={{
                     title: "Profile",
                     tabBarIcon: ({ color, size }) => (
-                        <FontAwesome name="user" size={size} color="color" />
+                        <FontAwesome name="user" size={size} color={color} />
                     ),
                 }}
             />
-
         </Tabs>
     );
 }

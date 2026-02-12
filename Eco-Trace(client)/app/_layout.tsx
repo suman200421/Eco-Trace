@@ -1,22 +1,27 @@
 import { Stack } from "expo-router";
+
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider
-      style={{ flex: 1 }}
-    >
+    <SafeAreaProvider style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#dfffff" },
+          headerStyle: { backgroundColor: "#ffffff" },
           headerTitleStyle: { color: "#112342" },
-          contentStyle: { backgroundColor: "#dfffff" },
+          contentStyle: { backgroundColor: "#ffffff" },
         }}
       >
-        {/* Tabs handle their own header/footer */}
+        {/* Add login screen FIRST */}
+        <Stack.Screen
+          name="login"
+          options={{ headerShown: false }}
+        />
+
+        {/* Tabs */}
         <Stack.Screen
           name="(tabs)"
           options={{ headerShown: false }}
