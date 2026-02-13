@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { router } from "expo-router";
+import { useRouter } from "expo-router"; 
 import {
   View,
   Text,
@@ -13,6 +13,8 @@ import {
 } from "react-native";
 
 export default function SignUp() {
+  const router = useRouter();   
+
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -24,7 +26,6 @@ export default function SignUp() {
   const [secureConfirm, setSecureConfirm] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  // ---------------- Validation ----------------
   const isValidEmail = (value) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -37,8 +38,8 @@ export default function SignUp() {
     isValidEmail(email) &&
     passwordsMatch;
 
-  // ---------------- Sign Up Handler ----------------
-  const handleSignUp = async () => {
+  
+  const handleVerifyEmail = async () => {
     if (!isFormValid) {
       alert("Please fill all fields correctly");
       return;
@@ -47,18 +48,21 @@ export default function SignUp() {
     try {
       setLoading(true);
 
-      // Simulated API call
+      // Simulate sending OTP
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Navigate to Home Tabs after success
-      router.replace("/(tabs)");
+      // ✅ Navigate to OTP screen & pass email
+      router.push({
+        pathname: "/verify-otp",
+        params: { email: email },
+      });
+
     } catch (error) {
       alert("Something went wrong. Try again.");
     } finally {
       setLoading(false);
     }
   };
-
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -154,22 +158,20 @@ export default function SignUp() {
           {/* Sign Up Button */}
           <TouchableOpacity
             style={[
-              styles.button,
-              {
-                backgroundColor: isFormValid
-                  ? "#1f7004"
-                  : "#9CA3AF",
-              },
-            ]}
-            onPress={handleSignUp}
-            disabled={!isFormValid || loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>
-                Sign Up
-              </Text>
+                styles.button,
+                {
+            backgroundColor: isFormValid ? "#1f7004" : "#9CA3AF",
+          },
+       ]}
+        onPress={handleVerifyEmail}
+        disabled={!isFormValid || loading}
+        >
+      {loading ? (
+        <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>
+            Verify Email
+            </Text>
             )}
           </TouchableOpacity>
 
