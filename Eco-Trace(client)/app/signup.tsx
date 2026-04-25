@@ -1,19 +1,22 @@
-import React, { useState } from "react";
-import { useRouter } from "expo-router"; 
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useState } from "react";
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
+  View,
 } from "react-native";
+import { API_BASE_URL } from "../lib/auth";
 
 export default function SignUp() {
-  const router = useRouter();   
+  const router = useRouter();
 
   const [firstName, setFirstName] = useState("");
   const [middleName, setMiddleName] = useState("");
@@ -22,47 +25,93 @@ export default function SignUp() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [secure, setSecure] = useState(true);
-  const [secureConfirm, setSecureConfirm] = useState(true);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [securePassword, setSecurePassword] = useState<boolean>(true);
+  const [secureConfirmPassword, setSecureConfirmPassword] = useState<boolean>(true);
 
-  const isValidEmail = (value) =>
-    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  // const isValidEmail = (value) =>
+  //   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-  const passwordsMatch =
-    password.length >= 6 && password === confirmPassword;
+  // const passwordsMatch =
+  //   password.length >= 6 && password === confirmPassword;
 
-  const isFormValid =
-    firstName.trim() &&
-    lastName.trim() &&
-    isValidEmail(email) &&
-    passwordsMatch;
+  // const isFormValid =
+  //   firstName.trim() &&
+  //   lastName.trim() &&
+  //   isValidEmail(email) &&
+  //   passwordsMatch;
 
-  
-  const handleVerifyEmail = async () => {
-    if (!isFormValid) {
-      alert("Please fill all fields correctly");
+
+  // const handleVerifyEmail = async () => {
+  //   if (!isFormValid) {
+  //     alert("Please fill all fields correctly");
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+
+  //     // Simulate sending OTP
+  //     await new Promise((resolve) => setTimeout(resolve, 1500));
+
+  //     // ✅ Navigate to OTP screen & pass email
+  //     router.push({
+  //       pathname: "/verify-otp",
+  //       params: { email: email },
+  //     });
+
+  //   } catch (error) {
+  //     alert("Something went wrong. Try again.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const register = async (): Promise<void> => {
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      Alert.alert("Error", "All fields are required");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
       return;
     }
 
     try {
       setLoading(true);
 
-      // Simulate sending OTP
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // ✅ Navigate to OTP screen & pass email
-      router.push({
-        pathname: "/verify-otp",
-        params: { email: email },
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          firstName,
+          middleName,
+          lastName,
+          email,
+          password
+        })
       });
 
-    } catch (error) {
-      alert("Something went wrong. Try again.");
+      if (!res.ok) {
+        Alert.alert("Error", "Registration failed");
+        return;
+      }
+
+      Alert.alert("Success", "OTP sent to your email");
+
+      router.push({
+        pathname: "./verify-otp",//need to change
+        params: { email }
+      });
+
+    } catch {
+      Alert.alert("Error", "Server not reachable");
     } finally {
       setLoading(false);
     }
   };
+
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -109,75 +158,64 @@ export default function SignUp() {
             autoCapitalize="none"
           />
 
-          {/* Password */}
           <View style={styles.passwordContainer}>
             <TextInput
-              placeholder="Password (min 6 characters)"
-              secureTextEntry={secure}
-              style={styles.passwordInput}
+              placeholder="Password"
               value={password}
               onChangeText={setPassword}
-            />
-            <TouchableOpacity onPress={() => setSecure(!secure)}>
-              <Text style={styles.showText}>
-                {secure ? "Show" : "Hide"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Confirm Password */}
-          <View
-            style={[
-              styles.passwordContainer,
-              confirmPassword &&
-                !passwordsMatch && { borderColor: "red" },
-            ]}
-          >
-            <TextInput
-              placeholder="Confirm Password *"
-              secureTextEntry={secureConfirm}
+              secureTextEntry={securePassword}
               style={styles.passwordInput}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
             />
             <TouchableOpacity
-              onPress={() => setSecureConfirm(!secureConfirm)}
+              onPress={() => setSecurePassword(!securePassword)}
+              style={styles.eyeIcon}
             >
-              <Text style={styles.showText}>
-                {secureConfirm ? "Show" : "Hide"}
-              </Text>
+              <Ionicons
+                name={securePassword ? "eye-off" : "eye"}
+                size={24}
+                color="#666"
+              />
             </TouchableOpacity>
           </View>
 
-          {confirmPassword && !passwordsMatch && (
-            <Text style={styles.errorText}>
-              Passwords must match and be at least 6 characters
-            </Text>
-          )}
+          <View style={styles.passwordContainer}>
+            <TextInput
+              placeholder="Confirm Password"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={secureConfirmPassword}
+              style={styles.passwordInput}
+            />
+            <TouchableOpacity
+              onPress={() => setSecureConfirmPassword(!secureConfirmPassword)}
+              style={styles.eyeIcon}
+            >
+              <Ionicons
+                name={secureConfirmPassword ? "eye-off" : "eye"}
+                size={24}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
 
           {/* Sign Up Button */}
           <TouchableOpacity
-            style={[
-                styles.button,
-                {
-            backgroundColor: isFormValid ? "#1f7004" : "#9CA3AF",
-          },
-       ]}
-        onPress={handleVerifyEmail}
-        disabled={!isFormValid || loading}
-        >
-      {loading ? (
-        <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>
-            Verify Email
-            </Text>
+            style={styles.button}
+            onPress={register}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#000" />
+            ) : (
+              <Text style={styles.buttonText}>
+                Verify Email
+              </Text>
             )}
           </TouchableOpacity>
 
           {/* Navigate to Login */}
           <TouchableOpacity
-            onPress={() => router.push("/login")}
+            onPress={() => router.push("./login")}
           >
             <Text style={styles.linkText}>
               Already have an account? Login
@@ -242,6 +280,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 45,
   },
+  eyeIcon: {
+    padding: 5,
+  },
   showText: {
     color: "#1f7004",
     fontWeight: "600",
@@ -258,9 +299,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
-    color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+    color: "#1f7004"
   },
   linkText: {
     textAlign: "center",
