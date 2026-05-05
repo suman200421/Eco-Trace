@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -129,6 +129,7 @@ export default function SignUp() {
             placeholder="First Name *"
             style={styles.input}
             value={firstName}
+            placeholderTextColor="#496b4b"
             onChangeText={setFirstName}
           />
 
@@ -137,6 +138,7 @@ export default function SignUp() {
             placeholder="Middle Name (Optional)"
             style={styles.input}
             value={middleName}
+            placeholderTextColor="#496b4b"
             onChangeText={setMiddleName}
           />
 
@@ -145,6 +147,7 @@ export default function SignUp() {
             placeholder="Last Name *"
             style={styles.input}
             value={lastName}
+            placeholderTextColor="#496b4b"
             onChangeText={setLastName}
           />
 
@@ -153,6 +156,7 @@ export default function SignUp() {
             placeholder="Email *"
             style={styles.input}
             value={email}
+            placeholderTextColor="#496b4b"
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -162,6 +166,7 @@ export default function SignUp() {
             <TextInput
               placeholder="Password"
               value={password}
+              placeholderTextColor="#496b4b"
               onChangeText={setPassword}
               secureTextEntry={securePassword}
               style={styles.passwordInput}
@@ -182,6 +187,7 @@ export default function SignUp() {
             <TextInput
               placeholder="Confirm Password"
               value={confirmPassword}
+              placeholderTextColor="#496b4b"
               onChangeText={setConfirmPassword}
               secureTextEntry={secureConfirmPassword}
               style={styles.passwordInput}

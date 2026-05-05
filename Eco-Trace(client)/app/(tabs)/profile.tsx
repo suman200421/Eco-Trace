@@ -1,6 +1,8 @@
+import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { logout as logoutUser } from "../../lib/auth";
+
 
 //Profile Tab
 export default function Profile() {
@@ -14,6 +16,8 @@ export default function Profile() {
           text: "Logout",
           style: "destructive",
           onPress: async () => {
+            await GoogleSignin.revokeAccess();
+            await GoogleSignin.signOut();
             await logoutUser();
             router.replace("/login");
           },

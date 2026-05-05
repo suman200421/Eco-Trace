@@ -1,5 +1,6 @@
+import { GoogleSignin, isErrorWithCode, statusCodes } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -14,6 +15,9 @@ import {
 } from "react-native";
 import { API_BASE_URL, persistSession } from "../lib/auth";
 
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID!;
+const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID!;
+
 type LoginResponse = {
   accessToken: string;
   refreshToken: string;
@@ -27,8 +31,91 @@ export default function Login() {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [secure, setSecure] = useState<boolean>(true);
+  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: GOOGLE_WEB_CLIENT_ID,
+      offlineAccess: true,
+      forceCodeForRefreshToken: true,
+    });
+  }, []);
 
   const isFormValid = email.trim() && password.trim();
+
+  const handleGoogleSignIn = async () => {
+    try {
+      setGoogleLoading(true);
+      await GoogleSignin.hasPlayServices();
+      const userInfo = await GoogleSignin.signIn();
+      console.log(userInfo.data);
+      if (userInfo.type === "success") {
+        const idToken = userInfo.data.idToken;
+
+        if (idToken) {
+          await handleGoogleLogin(idToken);
+        } else {
+          Alert.alert("Error", "Could not get Google ID token");
+        }
+      }
+    } catch (error: any) {
+      if (isErrorWithCode(error)) {
+        switch (error.code) {
+          case statusCodes.SIGN_IN_CANCELLED:
+            // user cancelled the login flow
+            break;
+          case statusCodes.IN_PROGRESS:
+            // operation (e.g. sign in) is in progress already
+            break;
+          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+            Alert.alert("Error", "Play services not available or outdated");
+            break;
+          default:
+            Alert.alert("Error", "Google sign-in failed: " + error.message);
+        }
+      } else {
+        Alert.alert("Error", error.message ?? "Google sign-in failed");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async (idToken: string) => {
+    try {
+      setGoogleLoading(true);
+
+      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ idToken, platform: Platform.OS }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        Alert.alert(
+          "Google Login Failed",
+          data.message ?? "Something went wrong"
+        );
+        return;
+      }
+
+      const userId = data.user_id ?? data.userId ?? data.id;
+
+      await persistSession({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        userId,
+      });
+
+      router.replace("/(tabs)");
+    } catch {
+      Alert.alert("Error", "Server not reachable");
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const login = async (): Promise<void> => {
     if (!email || !password) {
@@ -83,6 +170,7 @@ export default function Login() {
             placeholder="Email address"
             style={styles.input}
             value={email}
+            placeholderTextColor="#496b4b"
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
@@ -94,6 +182,7 @@ export default function Login() {
               placeholder="Password"
               style={styles.passwordInput}
               value={password}
+              placeholderTextColor="#496b4b"
               secureTextEntry={secure}
               onChangeText={setPassword}
             />
@@ -136,21 +225,27 @@ export default function Login() {
           <Text style={styles.divider}>– OR Continue with –</Text>
 
           <View style={styles.socialRow}>
-            <TouchableOpacity style={styles.socialBtn}>
-              <Text style={styles.socialText}>Google</Text>
+            <TouchableOpacity
+              style={styles.socialBtn}
+              onPress={handleGoogleSignIn}
+              disabled={googleLoading}
+            >
+              {googleLoading ? (
+                <ActivityIndicator size="small" color="#4285F4" />
+              ) : (
+                <Text style={styles.socialText}>Google</Text>
+              )}
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.socialBtn}>
-              <Text style={styles.socialText}>Facebook</Text>
-            </TouchableOpacity>
+            
           </View>
 
-          <View style={styles.signupRow}>
+          {/* <View style={styles.signupRow}>
             <Text>Create An Account </Text>
             <TouchableOpacity onPress={() => router.push("./signup")}>
               <Text style={styles.signupText}>Sign Up</Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           <Text style={styles.termsText}>
             By clicking Continue, you agree to our{" "}
