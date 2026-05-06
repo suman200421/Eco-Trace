@@ -48,7 +48,7 @@ export default function Login() {
       setGoogleLoading(true);
       await GoogleSignin.hasPlayServices();
       const userInfo = await GoogleSignin.signIn();
-      console.log(userInfo.data);
+      // console.log(userInfo.data);
       if (userInfo.type === "success") {
         const idToken = userInfo.data.idToken;
 
@@ -307,6 +307,7 @@ const styles = StyleSheet.create({
   },
   passwordInput: {
     flex: 1,
+    color: "#333",
     height: 45,
   },
   showText: {
