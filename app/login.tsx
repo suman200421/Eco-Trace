@@ -14,9 +14,7 @@ import {
   View,
 } from "react-native";
 import { API_BASE_URL, persistSession } from "../lib/auth";
-
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID!;
-const GOOGLE_ANDROID_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID!;
+import { configureGoogleSignIn } from "../lib/googleSignIn";
 
 type LoginResponse = {
   accessToken: string;
@@ -34,11 +32,7 @@ export default function Login() {
   const [googleLoading, setGoogleLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    GoogleSignin.configure({
-      webClientId: GOOGLE_WEB_CLIENT_ID,
-      offlineAccess: true,
-      forceCodeForRefreshToken: true,
-    });
+    configureGoogleSignIn();
   }, []);
 
   const isFormValid = email.trim() && password.trim();
@@ -46,7 +40,17 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     try {
       setGoogleLoading(true);
-      await GoogleSignin.hasPlayServices();
+      if (!configureGoogleSignIn()) {
+        Alert.alert(
+          "Google Sign-In unavailable",
+          "Missing Google web client ID configuration."
+        );
+        return;
+      }
+
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog: true,
+      });
       const userInfo = await GoogleSignin.signIn();
       // console.log(userInfo.data);
       if (userInfo.type === "success") {

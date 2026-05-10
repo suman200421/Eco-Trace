@@ -1,5 +1,4 @@
 import Feather from "@expo/vector-icons/Feather";
-import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
 import React, { ReactNode, useRef } from "react";
 import {
@@ -16,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { logout as logoutUser } from "../../lib/auth";
+import { signOutFromGoogle } from "../../lib/googleSignIn";
 
 const palette = {
   background: "#F5F7F9",
@@ -122,10 +122,12 @@ export default function Profile() {
         text: "Logout",
         style: "destructive",
         onPress: async () => {
-          await GoogleSignin.revokeAccess();
-          await GoogleSignin.signOut();
-          await logoutUser();
-          router.replace("/login");
+          try {
+            await signOutFromGoogle();
+          } finally {
+            await logoutUser();
+            router.replace("/login");
+          }
         },
       },
     ]);
