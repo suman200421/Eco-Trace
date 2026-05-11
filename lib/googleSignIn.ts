@@ -3,8 +3,36 @@ import {
   isErrorWithCode,
   statusCodes,
 } from "@react-native-google-signin/google-signin";
+import googleServices from "../google-services.json";
 
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+type GoogleServicesClient = {
+  oauth_client?: {
+    client_id?: string;
+    client_type?: number;
+  }[];
+};
+
+type GoogleServicesConfig = {
+  client?: GoogleServicesClient[];
+};
+
+function getFirebaseWebClientId() {
+  const config = googleServices as GoogleServicesConfig;
+
+  for (const client of config.client ?? []) {
+    const webClient = client.oauth_client?.find(
+      (oauthClient) => oauthClient.client_type === 3 && oauthClient.client_id
+    );
+
+    if (webClient?.client_id) {
+      return webClient.client_id;
+    }
+  }
+
+  return undefined;
+}
+
+const GOOGLE_WEB_CLIENT_ID = getFirebaseWebClientId();
 
 let isConfigured = false;
 
@@ -16,7 +44,7 @@ export function configureGoogleSignIn() {
   if (!GOOGLE_WEB_CLIENT_ID) {
     if (__DEV__) {
       console.warn(
-        "Missing EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID. Google Sign-In is not configured."
+        "Missing Firebase Web client ID in google-services.json. Google Sign-In is not configured."
       );
     }
     return false;
@@ -25,7 +53,7 @@ export function configureGoogleSignIn() {
   GoogleSignin.configure({
     webClientId: GOOGLE_WEB_CLIENT_ID,
     offlineAccess: true,
-    forceCodeForRefreshToken: true,
+    // forceCodeForRefreshToken: true,
   });
 
   isConfigured = true;

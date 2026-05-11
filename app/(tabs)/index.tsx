@@ -43,7 +43,7 @@ const EcoTraceHome: React.FC = () => {
         {/* --- Main Impact Card --- */}
         <View style={[styles.scoreCard, { backgroundColor: BRAND_GREEN }]}>
           <View style={styles.cardHeaderRow}>
-            <Text style={styles.scoreLabel}>Today's Footprint</Text>
+            <Text style={styles.scoreLabel}>Today&apos;s Footprint</Text>
             <View style={styles.statusBadge}>
               <Text style={[styles.statusText, { color: BRAND_GREEN }]}>Low Impact</Text>
             </View>
@@ -130,7 +130,7 @@ const EcoTraceHome: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFFFFF' },
-  scrollContent: { paddingBottom: 40 },
+  scrollContent: { paddingTop: 22, paddingBottom: 40 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 24 },
   greeting: { fontSize: 22, fontWeight: 'bold', color: '#1A1A1A' },
   date: { fontSize: 14, color: '#888', marginTop: 2 },

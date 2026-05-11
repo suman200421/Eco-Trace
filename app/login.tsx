@@ -1,5 +1,9 @@
 import { GoogleSignin, isErrorWithCode, statusCodes } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
+import {
+  GoogleAuthProvider,
+  signInWithCredential,
+} from "firebase/auth";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -13,12 +17,23 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+
 import { API_BASE_URL, persistSession } from "../lib/auth";
+import { auth } from "../lib/firebase";
 import { configureGoogleSignIn } from "../lib/googleSignIn";
 
 type LoginResponse = {
   accessToken: string;
   refreshToken: string;
+  firebaseToken?: string | null;
+  message?: string;
+  user?: {
+    id: string | number;
+    email?: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string;
+  };
   user_id?: string | number | null;
   userId?: string | number | null;
   id?: string | number | null;
@@ -43,7 +58,7 @@ export default function Login() {
       if (!configureGoogleSignIn()) {
         Alert.alert(
           "Google Sign-In unavailable",
-          "Missing Google web client ID configuration."
+          "Your google-services.json does not include a Firebase Web client ID yet."
         );
         return;
       }
@@ -57,7 +72,20 @@ export default function Login() {
         const idToken = userInfo.data.idToken;
 
         if (idToken) {
-          await handleGoogleLogin(idToken);
+          // Convert Google token -> Firebase credential
+          const credential =
+            GoogleAuthProvider.credential(idToken);
+
+          // Login into Firebase
+          const userCredential =
+            await signInWithCredential(auth, credential);
+
+          // Get Firebase token
+          const firebaseToken =
+            await userCredential.user.getIdToken();
+
+          // Send Firebase token to backend
+          await handleGoogleLogin(firebaseToken);
         } else {
           Alert.alert("Error", "Could not get Google ID token");
         }
@@ -95,7 +123,7 @@ export default function Login() {
         body: JSON.stringify({ idToken, platform: Platform.OS }),
       });
 
-      const data = await res.json();
+      const data: LoginResponse = await res.json();
 
       if (!res.ok) {
         Alert.alert(
@@ -105,7 +133,7 @@ export default function Login() {
         return;
       }
 
-      const userId = data.user_id ?? data.userId ?? data.id;
+      const userId = data.user?.id ?? data.user_id ?? data.userId ?? data.id;
 
       await persistSession({
         accessToken: data.accessToken,
@@ -143,7 +171,7 @@ export default function Login() {
         return;
       }
 
-      const userId = data.user_id ?? data.userId ?? data.id;
+      const userId = data.user?.id ?? data.user_id ?? data.userId ?? data.id;
 
       await persistSession({
         accessToken: data.accessToken,
@@ -241,7 +269,7 @@ export default function Login() {
               )}
             </TouchableOpacity>
 
-            
+
           </View>
 
           {/* <View style={styles.signupRow}>

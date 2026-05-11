@@ -1,11 +1,9 @@
-import { Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
 //Notification Tab
 export default function Notification() {
     return (
-        <View
-            style={{alignItems:"center"}}
-        >
+        <View style={styles.container}>
             <Text
             style={{fontSize:40,
                 fontWeight:700
@@ -15,3 +13,11 @@ export default function Notification() {
         </View>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        alignItems: "center",
+        paddingTop: 22,
+    },
+});

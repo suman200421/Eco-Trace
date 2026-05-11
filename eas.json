@@ -13,8 +13,7 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://ecotracebackend-d9mz.onrender.com",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "88118281847-6b4aq4ho3tj84mnqhnunbhfd84u0cdba.apps.googleusercontent.com"
+        "EXPO_PUBLIC_API_BASE_URL": "https://ecotracebackend-d9mz.onrender.com"
       },
       "autoIncrement": true
     }

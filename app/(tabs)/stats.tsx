@@ -103,7 +103,7 @@ const EcoTraceStats: React.FC = () => {
       <StatusBar barStyle="dark-content" />
       <ScrollView 
         showsVerticalScrollIndicator={false} 
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -151,6 +151,7 @@ const EcoTraceStats: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
+  scrollContent: { paddingTop: 22, paddingBottom: 40 },
   header: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 10 },
   title: { fontSize: 26, fontWeight: 'bold', color: '#1A1A1A' },
   subtitle: { fontSize: 15, color: '#666', marginTop: 4 },

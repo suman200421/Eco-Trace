@@ -32,14 +32,24 @@ export default function Index() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
+      // <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+      //   <ActivityIndicator size="large" />
+      // </View>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#F7FAF8",
+        }}
+      >
+        <ActivityIndicator size="large" color="#22C55E" />
       </View>
     );
   }
 
   return isLoggedIn ? (
-    <Redirect href="./(tabs)/stats" />
+    <Redirect href="./(tabs)" />
   ) : (
     <Redirect href="./login" />
   );

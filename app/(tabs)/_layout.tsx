@@ -23,7 +23,7 @@ export default function RootLayout() {
                 tabBarInactiveTintColor: "#000000",
 
                 //to remove the header use this
-                //headerShown: false,
+                headerShown: false,
             }}
         >
             <Tabs.Screen
