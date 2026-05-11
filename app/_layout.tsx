@@ -1,3 +1,4 @@
+import { TelemetryProvider } from "@/services/telemetry/TelemetryContext";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -58,6 +59,7 @@ export default function RootLayout() {
   }
 
   return (
+    <TelemetryProvider>
     <SafeAreaProvider style={{ flex: 1 }}>
       <StatusBar style="dark" />
       <Stack
@@ -89,5 +91,6 @@ export default function RootLayout() {
         />
       </Stack>
     </SafeAreaProvider>
+    </TelemetryProvider>
   );
 }

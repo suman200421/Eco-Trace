@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "548863333139",
+    "project_id": "oauth-project-2f99f",
+    "storage_bucket": "oauth-project-2f99f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548863333139:android:a0f6cf97217233585e00e6",
+        "android_client_info": {
+          "package_name": "com.isekai_suman.EcoTrace"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "548863333139-fjgl7tdmk9v42vm08nlmmp7qu4pt1oo3.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.isekai_suman.EcoTrace",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "548863333139-p2mrrr625rpbrgvf6cis7nnsib7vg650.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.isekai_suman.EcoTrace",
+            "certificate_hash": "d057f663495838cb0f659c50d5aeed69dc9cfaa0"
+          }
+        },
+        {
+          "client_id": "548863333139-8qln6o208ld4ka94jq8mae5n9u9cvsst.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYCAMh4gUSOvI8HsC3-Ki8vFVkaLd661I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "548863333139-8qln6o208ld4ka94jq8mae5n9u9cvsst.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
