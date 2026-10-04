@@ -1,7 +1,11 @@
+import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 
+// On physical devices over Wi-Fi, the host computer is reachable at 192.168.0.126.
+const DEFAULT_HOST = "http://192.168.0.126:5000";
+
 export const API_BASE_URL = (
-  process.env.EXPO_PUBLIC_API_BASE_URL ?? ""
+  process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_HOST
 ).replace(/\/+$/, "");
 
 type SessionTokens = {

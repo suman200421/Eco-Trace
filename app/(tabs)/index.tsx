@@ -1,4 +1,5 @@
 import React from 'react';
+import { router } from 'expo-router';
 import {
   View,
   Text,
@@ -87,13 +88,17 @@ const EcoTraceHome: React.FC = () => {
           <View style={styles.actionGrid}>
             
             {/* Transport Tile */}
-            <TouchableOpacity activeOpacity={0.7} style={styles.actionButton}>
+            <TouchableOpacity
+              activeOpacity={0.7}
+              style={styles.actionButton}
+              onPress={() => router.push("/(tabs)/start")}
+            >
               <View style={[styles.iconBox, { backgroundColor: BRAND_GREEN + '15' }]}>
                 <Text style={{fontSize: 24}}>🚗</Text>
               </View>
               <View style={styles.actionTextContent}>
                 <Text style={styles.actionLabel}>Transport</Text>
-                <Text style={styles.actionSubLabel}>Active tracking</Text>
+                <Text style={styles.actionSubLabel}>Start Tracking</Text>
               </View>
             </TouchableOpacity>
 

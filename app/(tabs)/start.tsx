@@ -27,10 +27,24 @@ const COLORS = {
 };
 
 export default function Start() {
-  const { isActive, pipelineState, vehicleType, startPipeline, stopPipeline } = useTelemetry();
+  const { isActive, pipelineState, vehicleType, lastPrediction, startPipeline, stopPipeline } = useTelemetry();
   const [chartData, setChartData] = useState(Array(12).fill(20));
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
   const scale = useSharedValue(1);
+
+  // Active tracking session elapsed timer
+  useEffect(() => {
+    let timer: any;
+    if (isActive) {
+      timer = setInterval(() => {
+        setElapsedSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setElapsedSeconds(0);
+    }
+    return () => clearInterval(timer);
+  }, [isActive]);
   
   // Simulate live data for the chart when active
   useEffect(() => {
@@ -117,6 +131,37 @@ export default function Start() {
               )}
             </View>
 
+            {/* 2-Minute Random Forest ML Model Classification Result */}
+            {isActive && lastPrediction && (
+              <View style={styles.mlResultCard}>
+                <View style={styles.mlResultHeader}>
+                  <View style={{ flexDirection: "row", alignItems: "center" }}>
+                    <Ionicons name="hardware-chip-outline" size={16} color={COLORS.PRIMARY} />
+                    <Text style={styles.mlBadgeTitle}>2-Min ML Classification</Text>
+                  </View>
+                  <Text style={styles.mlConfidenceBadge}>
+                    {lastPrediction.confidence_percent.toFixed(0)}% Confidence
+                  </Text>
+                </View>
+                <View style={styles.mlRow}>
+                  <Text style={styles.mlModeLabel}>Detected Mode:</Text>
+                  <Text style={styles.mlModeValue}>{lastPrediction.mode.toUpperCase()}</Text>
+                </View>
+                {lastPrediction.probabilities && Object.keys(lastPrediction.probabilities).length > 0 && (
+                  <View style={styles.probRow}>
+                    {Object.entries(lastPrediction.probabilities)
+                      .filter(([k]) => k !== "nan")
+                      .map(([cls, prob]) => (
+                        <View key={cls} style={styles.probPill}>
+                          <Text style={styles.probClass}>{cls}</Text>
+                          <Text style={styles.probVal}>{(Number(prob) * 100).toFixed(0)}%</Text>
+                        </View>
+                      ))}
+                  </View>
+                )}
+              </View>
+            )}
+
             {/* Analytics Visualizer */}
             <View style={styles.chartPlaceholder}>
               {chartData.map((val, i) => (
@@ -143,38 +188,56 @@ export default function Start() {
             <View style={styles.insightTextContainer}>
               <Text style={styles.insightTitle}>Eco Insight</Text>
               <Text style={styles.insightDescription}>
-                System is optimized for low-energy data collection.
+                {isActive && lastPrediction
+                  ? `Classified as ${lastPrediction.mode} via 2-min Random Forest window.`
+                  : "Continuous 2-min sensor windows stream to the Random Forest model."}
               </Text>
             </View>
           </View>
 
-          {/* Action Center */}
+          {/* Action Center with Prominent Start/Stop Button */}
           <View style={styles.actionCenter}>
             <View style={styles.buttonWrapper}>
               <Animated.View style={[styles.pulseCircle, pulseStyle]} />
               <Animated.View style={animatedButtonStyle}>
                 <TouchableOpacity
-                  activeOpacity={0.9}
+                  activeOpacity={0.85}
                   onPress={startButtonPress}
                   style={[
                     styles.mainActionButton,
-                    { backgroundColor: isActive ? "#FF4B4B" : COLORS.PRIMARY }
+                    { backgroundColor: isActive ? "#EF4444" : COLORS.PRIMARY }
                   ]}
                 >
                   <Ionicons
-                    name={isActive ? "square" : "play"}
-                    size={28}
+                    name={isActive ? "stop" : "play"}
+                    size={36}
                     color="#FFF"
                   />
                 </TouchableOpacity>
               </Animated.View>
             </View>
+
             <Text style={styles.actionTitle}>
-              {isActive ? "Stop Tracking" : "Start Collection"}
+              {isActive ? "Stop Tracking" : "Start Tracking Process"}
             </Text>
-            <Text style={styles.actionSubtitle}>
-              {isActive ? "Telemetry is active and syncing" : "Ready to capture eco-data streams"}
-            </Text>
+
+            {isActive ? (
+              <View style={styles.timerBadgeContainer}>
+                <View style={styles.liveTimerPill}>
+                  <Ionicons name="time-outline" size={14} color={COLORS.PRIMARY} />
+                  <Text style={styles.liveTimerText}>
+                    Session: {Math.floor(elapsedSeconds / 60)}:{(elapsedSeconds % 60).toString().padStart(2, "0")}
+                  </Text>
+                </View>
+                <Text style={styles.actionSubtitle}>
+                  Next ML prediction in: {(120 - (elapsedSeconds % 120))}s
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.actionSubtitle}>
+                Tap the button to start collecting sensor data for 2-minute ML classification
+              </Text>
+            )}
           </View>
         </View>
 
@@ -399,5 +462,94 @@ const styles = StyleSheet.create({
     color: COLORS.TEXT_SECONDARY,
     textAlign: "center",
     paddingHorizontal: 40,
+  },
+  mlResultCard: {
+    backgroundColor: COLORS.MINT,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: COLORS.PRIMARY + "30",
+  },
+  mlResultHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  mlBadgeTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: COLORS.PRIMARY,
+    marginLeft: 6,
+  },
+  mlConfidenceBadge: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: COLORS.DEEP,
+    backgroundColor: "#FFF",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  mlRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  mlModeLabel: {
+    fontSize: 13,
+    color: COLORS.TEXT_SECONDARY,
+    marginRight: 6,
+  },
+  mlModeValue: {
+    fontSize: 18,
+    fontWeight: "900",
+    color: COLORS.TEXT_PRIMARY,
+  },
+  probRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 4,
+  },
+  probPill: {
+    backgroundColor: "#FFF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  probClass: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: COLORS.TEXT_SECONDARY,
+    textTransform: "capitalize",
+    marginRight: 4,
+  },
+  probVal: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: COLORS.PRIMARY,
+  },
+  timerBadgeContainer: {
+    alignItems: "center",
+    marginTop: 6,
+  },
+  liveTimerPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: COLORS.MINT,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginBottom: 6,
+  },
+  liveTimerText: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: COLORS.DEEP,
+    marginLeft: 6,
   },
 });

@@ -6,6 +6,7 @@ import {
   DEBUG_FEATURE_BUFFER_SIZE,
   DEBUG_MODE,
   MIN_PREDICTION_PERSISTENCE,
+  ML_INFERENCE_WINDOW_MS,
   PREDICTION_BUFFER_SIZE,
   SENSOR_INTERVAL_MS,
   STATE_PERSISTENCE_WINDOWS,
@@ -13,7 +14,7 @@ import {
   SYNC_INTERVAL_MS,
   WINDOW_SIZE,
 } from "@/services/telemetry/config";
-import { extractFeatureVector } from "@/services/telemetry/features";
+import { computeRawSensorFeatures, extractFeatureVector } from "@/services/telemetry/features";
 import {
   computeSegmentDistance,
   createInitialFilterState,
@@ -27,8 +28,8 @@ import {
   insertTelemetryRecord,
   markRecordsSynced,
 } from "@/services/telemetry/storage";
-import { syncBatchToBackend } from "@/services/telemetry/sync";
-import { FeatureVector, MotionSample, PipelineState } from "@/services/telemetry/types";
+import { sendMlWindowPrediction, syncBatchToBackend } from "@/services/telemetry/sync";
+import { FeatureVector, MlPredictionResult, MotionSample, PipelineState } from "@/services/telemetry/types";
 import { useSensorCollection } from "@/services/telemetry/useSensorCollection";
 
 type RuntimeState = {
@@ -38,6 +39,10 @@ type RuntimeState = {
   lastAcceptedLocation: { latitude: number; longitude: number } | null;
   distanceAccumulated: number;
   window: MotionSample[];
+  // 2-Minute ML Inference Window Buffers
+  mlActiveBuffer: MotionSample[];
+  mlWindowIndex: number;
+  mlInferenceInFlight: boolean;
   stateHistory: PipelineState[];
   predictionBuffer: Array<"car" | "bike" | "bus" | "walking">;
   debugFeatureVectors: FeatureVector[];
@@ -52,6 +57,9 @@ const createRuntimeState = (): RuntimeState => ({
   lastAcceptedLocation: null,
   distanceAccumulated: 0,
   window: [],
+  mlActiveBuffer: [],
+  mlWindowIndex: 0,
+  mlInferenceInFlight: false,
   stateHistory: [],
   predictionBuffer: [],
   debugFeatureVectors: [],
@@ -92,10 +100,13 @@ export const useTelemetryPipeline = () => {
   const [pipelineState, setPipelineState] = useState<PipelineState>("idle");
   const [vehicleType, setVehicleType] = useState<string | null>(null);
 
+  const [lastPrediction, setLastPrediction] = useState<MlPredictionResult | null>(null);
+
   const runtimeRef = useRef<RuntimeState>(createRuntimeState());
   const filterStateRef = useRef(createInitialFilterState());
   const sampleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const processTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const mlWindowTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const syncNow = useCallback(async (): Promise<void> => {
@@ -116,6 +127,80 @@ export const useTelemetryPipeline = () => {
       }
     } catch (e) {
       console.error("Sync failed:", e);
+    }
+  }, []);
+
+  /**
+   * Evaluates the completed 2-minute inference window.
+   * Called strictly on the 2-minute boundary (non-overlapping).
+   */
+  const processCompletedMlWindow = useCallback(async (): Promise<void> => {
+    const runtime = runtimeRef.current;
+
+    // Rotate buffers immediately: freeze activeBuffer as completedBuffer
+    const completedBuffer = runtime.mlActiveBuffer;
+    runtime.mlActiveBuffer = []; // Fresh non-overlapping buffer for Window N+1
+    const windowIndex = runtime.mlWindowIndex++;
+
+    if (completedBuffer.length === 0) {
+      if (DEBUG_MODE) {
+        console.log(`ML Window #${windowIndex}: Skipped (no samples in window).`);
+      }
+      return;
+    }
+
+    if (runtime.mlInferenceInFlight) {
+      console.warn(`ML Window #${windowIndex}: Previous inference still in-flight, skipping to prevent unbounded queue.`);
+      return;
+    }
+
+    runtime.mlInferenceInFlight = true;
+
+    try {
+      // Aggregate the raw 2-minute samples into ONE 13-feature vector
+      const rawFeatures = computeRawSensorFeatures(completedBuffer);
+      const windowId = `win_${Date.now()}_${windowIndex}`;
+
+      if (DEBUG_MODE) {
+        console.log(`[ML 2-MIN WINDOW #${windowIndex}] Aggregated ${completedBuffer.length} samples. Sending 1 inference request...`, {
+          speed: rawFeatures.speed.toFixed(2),
+          rms: rawFeatures.rms.toFixed(4),
+          gyro: rawFeatures.gyro_magnitude_mean.toFixed(4)
+        });
+      }
+
+      // Send ONE compact request to EcoTrace Backend
+      const prediction = await sendMlWindowPrediction(
+        windowId,
+        windowIndex,
+        ML_INFERENCE_WINDOW_MS,
+        rawFeatures
+      );
+
+      if (prediction) {
+        if (DEBUG_MODE) {
+          console.log(`[ML 2-MIN PREDICTION #${windowIndex} RECEIVED]:`, {
+            mode: prediction.mode,
+            confidence: prediction.confidence_percent + "%",
+            probabilities: prediction.probabilities,
+          });
+        }
+
+        setLastPrediction(prediction);
+
+        // Update active vehicle type & state from ML
+        const predictedMode = prediction.mode.toLowerCase();
+        runtime.vehicleType = predictedMode;
+        setVehicleType(predictedMode);
+
+        const newState: PipelineState = predictedMode === "walk" || predictedMode === "walking" ? "walking" : "vehicle";
+        runtime.currentState = newState;
+        setPipelineState(newState);
+      }
+    } catch (err) {
+      console.error("Failed to process 2-minute ML window:", err);
+    } finally {
+      runtime.mlInferenceInFlight = false;
     }
   }, []);
 
@@ -159,9 +244,11 @@ export const useTelemetryPipeline = () => {
   const clearAll = (): void => {
     if (sampleTimerRef.current) clearInterval(sampleTimerRef.current);
     if (processTimerRef.current) clearInterval(processTimerRef.current);
+    if (mlWindowTimerRef.current) clearInterval(mlWindowTimerRef.current);
     if (syncTimerRef.current) clearInterval(syncTimerRef.current);
     sampleTimerRef.current = null;
     processTimerRef.current = null;
+    mlWindowTimerRef.current = null;
     syncTimerRef.current = null;
   };
 
@@ -178,6 +265,7 @@ export const useTelemetryPipeline = () => {
 
       if (!mounted) return;
 
+      // Sample collection timer (100ms)
       sampleTimerRef.current = setInterval(() => {
         const runtime = runtimeRef.current;
         if (!runtime.latestAcc || !runtime.latestGyro) return;
@@ -186,7 +274,7 @@ export const useTelemetryPipeline = () => {
         if (!acc) return;
         const gyro = preprocessGyroscope(runtime.latestGyro, filterStateRef.current);
 
-        runtime.window.push({
+        const sample: MotionSample = {
           timestamp: Date.now(),
           accX: acc.x,
           accY: acc.y,
@@ -197,13 +285,19 @@ export const useTelemetryPipeline = () => {
           speed: runtime.latestLocation?.speed ?? 0,
           latitude: runtime.latestLocation?.latitude ?? null,
           longitude: runtime.latestLocation?.longitude ?? null,
-        });
+        };
 
+        // 5-second sliding window for local storage
+        runtime.window.push(sample);
         if (runtime.window.length > WINDOW_SIZE) {
           runtime.window.shift();
         }
+
+        // Continuous 2-minute non-overlapping ML buffer
+        runtime.mlActiveBuffer.push(sample);
       }, SENSOR_INTERVAL_MS);
 
+      // Local 5-second persistence & interim status timer
       processTimerRef.current = setInterval(async () => {
         const runtime = runtimeRef.current;
         if (runtime.window.length < WINDOW_SIZE) return;
@@ -218,17 +312,8 @@ export const useTelemetryPipeline = () => {
 
         const isIdle = isIdleWindow(featureVector);
         let windowState: PipelineState = "idle";
-        let currentVehicle: string | null = null;
+        let currentVehicle: string | null = runtime.vehicleType;
         let confidence: number | null = null;
-
-        if (DEBUG_MODE) {
-          console.log("FEATURE_VECTOR:", {
-            rms: featureVector.acc_rms_mean.toFixed(4),
-            acc_std: featureVector.acc_mag_std.toFixed(4),
-            gyro_std: featureVector.gyro_mag_std.toFixed(4),
-            speed: featureVector.speed_mean.toFixed(2),
-          });
-        }
 
         if (!isIdle) {
           const mlOutput = inferVehicleType(featureVector);
@@ -239,18 +324,9 @@ export const useTelemetryPipeline = () => {
 
           const voted = getMajority(runtime.predictionBuffer);
           const occurrences = runtime.predictionBuffer.filter((v) => v === voted).length;
-          
-          if (DEBUG_MODE) {
-            console.log("ML_PREDICTION:", {
-              raw: mlOutput.vehicle_type,
-              conf: mlOutput.confidence.toFixed(2),
-              voted: voted,
-              persistence: occurrences
-            });
-          }
 
           if (voted && occurrences >= MIN_PREDICTION_PERSISTENCE) {
-            currentVehicle = voted;
+            currentVehicle = runtime.vehicleType || voted;
             confidence = mlOutput.confidence;
             windowState = toPipelineState(mlOutput);
           } else {
@@ -260,13 +336,8 @@ export const useTelemetryPipeline = () => {
 
         const stableState = getStableState(runtime.stateHistory, windowState);
         if (stableState) {
-          if (stableState !== runtime.currentState) {
-            console.log(`STATE_TRANSITION: ${runtime.currentState} -> ${stableState} (${currentVehicle ?? "none"})`);
-          }
           runtime.currentState = stableState;
-          runtime.vehicleType = currentVehicle;
           setPipelineState(stableState);
-          setVehicleType(currentVehicle);
         }
 
         const latest = runtime.latestLocation;
@@ -283,21 +354,19 @@ export const useTelemetryPipeline = () => {
           confidence: runtime.currentState === "vehicle" ? confidence : null,
           synced: 0,
         });
-
-        if (DEBUG_MODE) {
-          console.log("RECORD_SAVED", {
-            state: runtime.currentState,
-            vehicle: currentVehicle,
-            dist: distance5s.toFixed(2)
-          });
-        }
       }, 5000);
 
+      // 2-MINUTE ML INFERENCE WINDOW TIMER (Executed EXACTLY ONCE every 2 minutes)
+      mlWindowTimerRef.current = setInterval(() => {
+        void processCompletedMlWindow();
+      }, ML_INFERENCE_WINDOW_MS);
+
+      // Periodic cloud sync
       syncTimerRef.current = setInterval(() => {
         void syncNow();
       }, SYNC_INTERVAL_MS);
 
-      console.log("Telemetry Pipeline: STARTED");
+      console.log(`Telemetry Pipeline: STARTED (2-Minute ML Window: ${ML_INFERENCE_WINDOW_MS / 1000}s)`);
     };
 
     void start();
@@ -307,7 +376,7 @@ export const useTelemetryPipeline = () => {
       clearAll();
       console.log("Telemetry Pipeline: STOPPED");
     };
-  }, [isActive, syncNow]);
+  }, [isActive, syncNow, processCompletedMlWindow]);
 
   useEffect(() => {
     const appStateSub = AppState.addEventListener("change", (status: AppStateStatus) => {
@@ -323,6 +392,7 @@ export const useTelemetryPipeline = () => {
     isActive,
     pipelineState,
     vehicleType,
+    lastPrediction,
     startPipeline: () => {
       console.log("Pipeline action: START");
       setIsActive(true);
@@ -332,6 +402,7 @@ export const useTelemetryPipeline = () => {
       setIsActive(false);
       setPipelineState("idle");
       setVehicleType(null);
+      setLastPrediction(null);
       runtimeRef.current = createRuntimeState();
     },
   };

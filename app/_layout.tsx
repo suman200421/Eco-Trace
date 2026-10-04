@@ -20,7 +20,7 @@ export default function RootLayout() {
         if (!isMounted) return;
 
         const isAuth = !!session?.accessToken;
-        const inAuthGroup = segments[0] === "login" || segments[0] === "signup" || segments[0] === "verify-otp";
+        const inAuthGroup = segments[0] === "login" || segments[0] === "signup";
 
         if (!isAuth && !inAuthGroup) {
           router.replace("/login");
@@ -30,7 +30,7 @@ export default function RootLayout() {
       } catch (error) {
         if (!isMounted) return;
         // Proceed as unauthenticated
-        const inAuthGroup = segments[0] === "login" || segments[0] === "signup" || segments[0] === "verify-otp";
+        const inAuthGroup = segments[0] === "login" || segments[0] === "signup";
         if (!inAuthGroup) {
           router.replace("/login");
         }
@@ -77,10 +77,6 @@ export default function RootLayout() {
         />
         <Stack.Screen
           name="signup"
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="verify-otp"
           options={{ headerShown: false }}
         />
 

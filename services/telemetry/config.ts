@@ -1,6 +1,12 @@
 export const DEBUG_MODE = true;
 
 export const SENSOR_INTERVAL_MS = 100;
+
+// 2-minute ML Inference Window
+export const ML_INFERENCE_WINDOW_MS = 2 * 60 * 1000; // 120,000 ms (2 minutes)
+export const ML_WINDOW_SAMPLES = Math.floor(ML_INFERENCE_WINDOW_MS / SENSOR_INTERVAL_MS); // 1200 samples
+
+// Legacy/local pipeline constants (for intermediate local updates)
 export const WINDOW_SECONDS = 5;
 export const WINDOW_SIZE = Math.floor((WINDOW_SECONDS * 1000) / SENSOR_INTERVAL_MS);
 export const STATE_PERSISTENCE_WINDOWS = 3;
@@ -11,3 +17,4 @@ export const MIN_LOCATION_ACCURACY_METERS = 20;
 export const MIN_MOVEMENT_METERS = 3;
 export const SYNC_INTERVAL_MS = 10 * 60 * 1000;
 export const SYNC_BATCH_SIZE = 150;
+

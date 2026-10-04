@@ -1,10 +1,5 @@
-import { GoogleSignin, isErrorWithCode, statusCodes } from "@react-native-google-signin/google-signin";
 import { router } from "expo-router";
-import {
-  GoogleAuthProvider,
-  signInWithCredential,
-} from "firebase/auth";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -19,13 +14,10 @@ import {
 } from "react-native";
 
 import { API_BASE_URL, persistSession } from "../lib/auth";
-import { auth } from "../lib/firebase";
-import { configureGoogleSignIn } from "../lib/googleSignIn";
 
 type LoginResponse = {
   accessToken: string;
   refreshToken: string;
-  firebaseToken?: string | null;
   message?: string;
   user?: {
     id: string | number;
@@ -44,110 +36,8 @@ export default function Login() {
   const [password, setPassword] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [secure, setSecure] = useState<boolean>(true);
-  const [googleLoading, setGoogleLoading] = useState<boolean>(false);
-
-  useEffect(() => {
-    configureGoogleSignIn();
-  }, []);
 
   const isFormValid = email.trim() && password.trim();
-
-  const handleGoogleSignIn = async () => {
-    try {
-      setGoogleLoading(true);
-      if (!configureGoogleSignIn()) {
-        Alert.alert(
-          "Google Sign-In unavailable",
-          "Your google-services.json does not include a Firebase Web client ID yet."
-        );
-        return;
-      }
-
-      await GoogleSignin.hasPlayServices({
-        showPlayServicesUpdateDialog: true,
-      });
-      const userInfo = await GoogleSignin.signIn();
-      // console.log(userInfo.data);
-      if (userInfo.type === "success") {
-        const idToken = userInfo.data.idToken;
-
-        if (idToken) {
-          // Convert Google token -> Firebase credential
-          const credential =
-            GoogleAuthProvider.credential(idToken);
-
-          // Login into Firebase
-          const userCredential =
-            await signInWithCredential(auth, credential);
-
-          // Get Firebase token
-          const firebaseToken =
-            await userCredential.user.getIdToken();
-
-          // Send Firebase token to backend
-          await handleGoogleLogin(firebaseToken);
-        } else {
-          Alert.alert("Error", "Could not get Google ID token");
-        }
-      }
-    } catch (error: any) {
-      if (isErrorWithCode(error)) {
-        switch (error.code) {
-          case statusCodes.SIGN_IN_CANCELLED:
-            // user cancelled the login flow
-            break;
-          case statusCodes.IN_PROGRESS:
-            // operation (e.g. sign in) is in progress already
-            break;
-          case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
-            Alert.alert("Error", "Play services not available or outdated");
-            break;
-          default:
-            Alert.alert("Error", "Google sign-in failed: " + error.message);
-        }
-      } else {
-        Alert.alert("Error", error.message ?? "Google sign-in failed");
-      }
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = async (idToken: string) => {
-    try {
-      setGoogleLoading(true);
-
-      const res = await fetch(`${API_BASE_URL}/api/auth/google`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ idToken, platform: Platform.OS }),
-      });
-
-      const data: LoginResponse = await res.json();
-
-      if (!res.ok) {
-        Alert.alert(
-          "Google Login Failed",
-          data.message ?? "Something went wrong"
-        );
-        return;
-      }
-
-      const userId = data.user?.id ?? data.user_id ?? data.userId ?? data.id;
-
-      await persistSession({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        userId,
-      });
-
-      router.replace("/(tabs)");
-    } catch {
-      Alert.alert("Error", "Server not reachable");
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   const login = async (): Promise<void> => {
     if (!email || !password) {
@@ -180,8 +70,12 @@ export default function Login() {
       });
 
       router.replace("/(tabs)");
-    } catch {
-      Alert.alert("Error", "Server not reachable");
+    } catch (err: any) {
+      console.error("Login fetch error:", err);
+      Alert.alert(
+        "Server Connection Error",
+        `Could not reach server at ${API_BASE_URL}.\n\nError: ${err?.message ?? "Network request failed"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -247,43 +141,10 @@ export default function Login() {
           </TouchableOpacity>
 
           {/* Navigate to Sign Up */}
+          {/* Navigate to Sign Up */}
           <TouchableOpacity onPress={() => router.push("./signup")}>
             <Text style={styles.linkText}>Dont have an account? Sign Up</Text>
           </TouchableOpacity>
-        </View>
-
-        {/* ---------- Social Section (ADD HERE) ---------- */}
-        <View style={styles.socialSection}>
-          <Text style={styles.divider}>– OR Continue with –</Text>
-
-          <View style={styles.socialRow}>
-            <TouchableOpacity
-              style={styles.socialBtn}
-              onPress={handleGoogleSignIn}
-              disabled={googleLoading}
-            >
-              {googleLoading ? (
-                <ActivityIndicator size="small" color="#4285F4" />
-              ) : (
-                <Text style={styles.socialText}>Google</Text>
-              )}
-            </TouchableOpacity>
-
-
-          </View>
-
-          {/* <View style={styles.signupRow}>
-            <Text>Create An Account </Text>
-            <TouchableOpacity onPress={() => router.push("./signup")}>
-              <Text style={styles.signupText}>Sign Up</Text>
-            </TouchableOpacity>
-          </View> */}
-
-          <Text style={styles.termsText}>
-            By clicking Continue, you agree to our{" "}
-            <Text style={styles.linkBlue}>Terms of Service</Text> and{" "}
-            <Text style={styles.linkBlue}>Privacy Policy</Text>
-          </Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -367,63 +228,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 15,
     color: "#1f7004",
-    fontWeight: "600",
-  },
-  socialSection: {
-    width: "100%",
-    maxWidth: 400,
-    alignItems: "center",
-    marginTop: 25,
-  },
-
-  divider: {
-    color: "#777",
-    marginBottom: 20,
-  },
-
-  socialRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 20,
-  },
-
-  socialBtn: {
-    flex: 1,
-    height: 45,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: "#3b82f6",
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 5,
-    backgroundColor: "#ffffff",
-  },
-
-  socialText: {
-    fontWeight: "600",
-    color: "#333",
-  },
-
-  signupRow: {
-    flexDirection: "row",
-    marginBottom: 15,
-  },
-
-  signupText: {
-    color: "#2563eb",
-    fontWeight: "bold",
-  },
-
-  termsText: {
-    textAlign: "center",
-    fontSize: 12,
-    color: "#666",
-    paddingHorizontal: 20,
-  },
-
-  linkBlue: {
-    color: "#2563eb",
     fontWeight: "600",
   },
 });

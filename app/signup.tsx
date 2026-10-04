@@ -29,44 +29,6 @@ export default function SignUp() {
   const [securePassword, setSecurePassword] = useState<boolean>(true);
   const [secureConfirmPassword, setSecureConfirmPassword] = useState<boolean>(true);
 
-  // const isValidEmail = (value) =>
-  //   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-
-  // const passwordsMatch =
-  //   password.length >= 6 && password === confirmPassword;
-
-  // const isFormValid =
-  //   firstName.trim() &&
-  //   lastName.trim() &&
-  //   isValidEmail(email) &&
-  //   passwordsMatch;
-
-
-  // const handleVerifyEmail = async () => {
-  //   if (!isFormValid) {
-  //     alert("Please fill all fields correctly");
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-
-  //     // Simulate sending OTP
-  //     await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  //     // ✅ Navigate to OTP screen & pass email
-  //     router.push({
-  //       pathname: "/verify-otp",
-  //       params: { email: email },
-  //     });
-
-  //   } catch (error) {
-  //     alert("Something went wrong. Try again.");
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const register = async (): Promise<void> => {
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
       Alert.alert("Error", "All fields are required");
@@ -93,20 +55,25 @@ export default function SignUp() {
         })
       });
 
+      const data = await res.json().catch(() => null);
+
       if (!res.ok) {
-        Alert.alert("Error", "Registration failed");
+        Alert.alert("Error", data?.message ?? "Registration failed");
         return;
       }
 
-      Alert.alert("Success", "OTP sent to your email");
-
-      router.push({
-        pathname: "./verify-otp",//need to change
-        params: { email }
-      });
-
-    } catch {
-      Alert.alert("Error", "Server not reachable");
+      Alert.alert("Success", "Account created successfully! Please log in.", [
+        {
+          text: "OK",
+          onPress: () => router.push("./login"),
+        },
+      ]);
+    } catch (err: any) {
+      console.error("Register fetch error:", err);
+      Alert.alert(
+        "Server Connection Error",
+        `Could not reach server at ${API_BASE_URL}.\n\nError: ${err?.message ?? "Network request failed"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -204,17 +171,32 @@ export default function SignUp() {
             </TouchableOpacity>
           </View>
 
-          {/* Sign Up Button */}
+          {/* Register Button */}
           <TouchableOpacity
-            style={styles.button}
+            style={[
+              styles.button,
+              {
+                backgroundColor:
+                  firstName && lastName && email && password && confirmPassword
+                    ? "#1f7004"
+                    : "#9CA3AF",
+              },
+            ]}
             onPress={register}
-            disabled={loading}
+            disabled={
+              !firstName ||
+              !lastName ||
+              !email ||
+              !password ||
+              !confirmPassword ||
+              loading
+            }
           >
             {loading ? (
-              <ActivityIndicator color="#000" />
+              <ActivityIndicator color="#fff" />
             ) : (
               <Text style={styles.buttonText}>
-                Verify Email
+                Register
               </Text>
             )}
           </TouchableOpacity>
@@ -308,7 +290,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#1f7004"
+    color: "#fff"
   },
   linkText: {
     textAlign: "center",

@@ -1,11 +1,12 @@
 import React, { createContext, useContext, ReactNode } from "react";
 import { useTelemetryPipeline } from "./useTelemetryPipeline";
-import { PipelineState } from "./types";
+import { MlPredictionResult, PipelineState } from "./types";
 
 type TelemetryContextType = {
   isActive: boolean;
   pipelineState: PipelineState;
   vehicleType: string | null;
+  lastPrediction: MlPredictionResult | null;
   startPipeline: () => void;
   stopPipeline: () => void;
 };

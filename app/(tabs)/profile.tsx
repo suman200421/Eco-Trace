@@ -15,7 +15,6 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { logout as logoutUser } from "../../lib/auth";
-import { signOutFromGoogle } from "../../lib/googleSignIn";
 
 const palette = {
   background: "#F5F7F9",
@@ -122,12 +121,8 @@ export default function Profile() {
         text: "Logout",
         style: "destructive",
         onPress: async () => {
-          try {
-            await signOutFromGoogle();
-          } finally {
-            await logoutUser();
-            router.replace("/login");
-          }
+          await logoutUser();
+          router.replace("/login");
         },
       },
     ]);

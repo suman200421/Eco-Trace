@@ -45,3 +45,30 @@ export type PersistedRecord = {
   confidence: number | null;
   synced: number;
 };
+
+export type RawSensorFeatures = {
+  ax_mean: number;
+  ay_mean: number;
+  az_mean: number;
+  ax_std: number;
+  ay_std: number;
+  az_std: number;
+  magnitude_mean: number;
+  magnitude_std: number;
+  rms: number;
+  speed: number;
+  speed_std: number;
+  gyro_magnitude_mean: number;
+  gyro_magnitude_std: number;
+};
+
+export type MlPredictionResult = {
+  windowId?: string | null;
+  windowIndex?: number | null;
+  durationMs: number;
+  mode: string;
+  confidence: number;
+  confidence_percent: number;
+  probabilities: Record<string, number>;
+  predictedAt: string;
+};
