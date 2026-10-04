@@ -7,8 +7,11 @@ import {
   DEBUG_MODE,
   MIN_PREDICTION_PERSISTENCE,
   ML_INFERENCE_WINDOW_MS,
+  MS_TO_KMH,
   PREDICTION_BUFFER_SIZE,
   SENSOR_INTERVAL_MS,
+  SPEED_GATE_IDLE_KMH,
+  SPEED_GATE_WALK_KMH,
   STATE_PERSISTENCE_WINDOWS,
   SYNC_BATCH_SIZE,
   SYNC_INTERVAL_MS,
@@ -133,6 +136,10 @@ export const useTelemetryPipeline = () => {
   /**
    * Evaluates the completed 2-minute inference window.
    * Called strictly on the 2-minute boundary (non-overlapping).
+   * Implements Speed-Gated ML Inference:
+   *  - < 0.5 km/h: Local 'idle' classification (bypasses ML)
+   *  - 0.5 to < 5.0 km/h: Local 'walk' classification (bypasses ML)
+   *  - >= 5.0 km/h: Dispatches 13-feature payload to Random Forest ML service
    */
   const processCompletedMlWindow = useCallback(async (): Promise<void> => {
     const runtime = runtimeRef.current;
@@ -161,13 +168,74 @@ export const useTelemetryPipeline = () => {
       const rawFeatures = computeRawSensorFeatures(completedBuffer);
       const windowId = `win_${Date.now()}_${windowIndex}`;
 
+      // Convert speed from m/s to km/h for speed gate evaluation
+      const rawSpeedMs = Number.isFinite(rawFeatures.speed) ? Math.max(0, rawFeatures.speed) : 0;
+      const speedKmh = rawSpeedMs * MS_TO_KMH;
+
+      // --- SPEED GATE EVALUATION ---
+      // 1. Below 0.5 km/h: Classify as 'idle' locally without network request
+      if (speedKmh < SPEED_GATE_IDLE_KMH) {
+        if (DEBUG_MODE) {
+          console.log(
+            `[SpeedGate] Window #${windowIndex}: ${speedKmh.toFixed(2)} km/h < ${SPEED_GATE_IDLE_KMH} km/h -> Classified as 'idle' locally. Skipping ML inference.`
+          );
+        }
+        runtime.vehicleType = null;
+        runtime.currentState = "idle";
+        setPipelineState("idle");
+        setVehicleType(null);
+        setLastPrediction({
+          windowId,
+          windowIndex,
+          durationMs: ML_INFERENCE_WINDOW_MS,
+          mode: "idle",
+          confidence: 1.0,
+          confidence_percent: 100,
+          probabilities: { idle: 1.0 },
+          predictedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // 2. Between 0.5 km/h and < 5.0 km/h: Classify as 'walk' locally without network request
+      if (speedKmh < SPEED_GATE_WALK_KMH) {
+        if (DEBUG_MODE) {
+          console.log(
+            `[SpeedGate] Window #${windowIndex}: ${speedKmh.toFixed(2)} km/h (< ${SPEED_GATE_WALK_KMH} km/h) -> Classified as 'walk' locally. Skipping ML inference.`
+          );
+        }
+        runtime.vehicleType = "walk";
+        runtime.currentState = "walking";
+        setPipelineState("walking");
+        setVehicleType("walk");
+        setLastPrediction({
+          windowId,
+          windowIndex,
+          durationMs: ML_INFERENCE_WINDOW_MS,
+          mode: "walk",
+          confidence: 1.0,
+          confidence_percent: 100,
+          probabilities: { walk: 1.0 },
+          predictedAt: new Date().toISOString(),
+        });
+        return;
+      }
+
+      // 3. At or above 5.0 km/h: Vehicle speed detected -> Dispatch to ML Pipeline
       if (DEBUG_MODE) {
+        console.log(
+          `[SpeedGate] Window #${windowIndex}: ${speedKmh.toFixed(2)} km/h >= ${SPEED_GATE_WALK_KMH} km/h -> Dispatching ML inference...`
+        );
         console.log(`[ML 2-MIN WINDOW #${windowIndex}] Aggregated ${completedBuffer.length} samples. Sending 1 inference request...`, {
-          speed: rawFeatures.speed.toFixed(2),
+          speedKmh: speedKmh.toFixed(2),
           rms: rawFeatures.rms.toFixed(4),
-          gyro: rawFeatures.gyro_magnitude_mean.toFixed(4)
+          gyro: rawFeatures.gyro_magnitude_mean.toFixed(4),
         });
       }
+
+      // Format speed features to km/h to match ML training units
+      rawFeatures.speed = speedKmh;
+      rawFeatures.speed_std = (Number.isFinite(rawFeatures.speed_std) ? rawFeatures.speed_std : 0) * MS_TO_KMH;
 
       // Send ONE compact request to EcoTrace Backend
       const prediction = await sendMlWindowPrediction(
