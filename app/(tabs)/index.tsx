@@ -5,19 +5,22 @@ import {
   Text,
   StyleSheet,
   ScrollView,
+  SafeAreaView,
   Dimensions,
   TouchableOpacity,
   StatusBar,
   Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Path, Circle, Polygon, Rect, G, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 const screenWidth = Dimensions.get('window').width;
 const BRAND_GREEN = '#117A0E';
-const LIGHT_GREEN_BG = '#E6F5E6';
+const DARK_GREEN = '#075D16';
+const LIGHT_GREEN_BG = '#E5F6E9';
+const TEXT_DARK = '#101318';
 
 const EcoTraceHome: React.FC = () => {
   const dailyFootprint = 6.2;
@@ -41,22 +44,19 @@ const EcoTraceHome: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* --- Main Impact Card --- */}
-        <View style={styles.scoreCard}>
-          {/* Background Gradient (SVG-based for universal cross-platform compatibility) */}
-          <View style={StyleSheet.absoluteFill} pointerEvents="none">
-            <Svg width="100%" height="100%">
-              <Defs>
-                <SvgLinearGradient id="scoreCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <Stop offset="0%" stopColor="#2E9322" stopOpacity="1" />
-                  <Stop offset="50%" stopColor="#177412" stopOpacity="1" />
-                  <Stop offset="100%" stopColor="#0E5C0B" stopOpacity="1" />
-                </SvgLinearGradient>
-              </Defs>
-              <Rect width="100%" height="100%" fill="url(#scoreCardGrad)" />
-            </Svg>
-          </View>
-          {/* Decorative background curve & sprout */}
+        {/* Greeting */}
+        <View style={styles.greeting}>
+          <Text style={styles.greetingTitle}>Hi EcoTrace User</Text>
+          <Text style={styles.greetingSubtitle}>Track your impact today</Text>
+        </View>
+
+        {/* Today's footprint */}
+        <LinearGradient
+          colors={['#2E9322', '#177412', '#0E5C0B']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.scoreCard}
+        >
           <View style={styles.cardDecorContainer} pointerEvents="none">
             <Svg width="200" height="160" viewBox="0 0 200 160">
               <Path
@@ -67,23 +67,20 @@ const EcoTraceHome: React.FC = () => {
                 d="M115 160 C135 125, 170 115, 200 125 L200 160 Z"
                 fill="rgba(0,0,0,0.12)"
               />
-              {/* Sprout stem */}
               <Path
                 d="M162 142 Q162 115 162 104"
-                stroke="rgba(165, 235, 140, 0.45)"
+                stroke="rgba(165,235,140,0.55)"
                 strokeWidth="3.5"
                 strokeLinecap="round"
                 fill="none"
               />
-              {/* Left leaf */}
               <Path
-                d="M162 116 C142 116, 134 102, 136 90 C150 90, 162 102, 162 116 Z"
-                fill="rgba(165, 235, 140, 0.4)"
+                d="M162 116 C142 116 134 102 136 90 C150 90 162 102 162 116 Z"
+                fill="rgba(165,235,140,0.5)"
               />
-              {/* Right leaf */}
               <Path
-                d="M162 112 C164 95, 178 84, 192 86 C192 100, 178 112, 162 112 Z"
-                fill="rgba(165, 235, 140, 0.45)"
+                d="M162 112 C164 95 178 84 192 86 C192 100 178 112 162 112 Z"
+                fill="rgba(165,235,140,0.55)"
               />
             </Svg>
           </View>
@@ -91,37 +88,41 @@ const EcoTraceHome: React.FC = () => {
           <View style={styles.cardHeaderRow}>
             <Text style={styles.scoreLabel}>Today's Footprint</Text>
             <View style={styles.statusBadge}>
-              <MaterialCommunityIcons name="leaf" size={14} color={BRAND_GREEN} />
+              <MaterialCommunityIcons name="leaf" size={16} color={BRAND_GREEN} />
               <Text style={styles.statusText}>LOW IMPACT</Text>
             </View>
           </View>
 
           <View style={styles.scoreRow}>
             <View style={styles.scoreValueWrap}>
-              <Text style={styles.scoreValue}>{dailyFootprint}</Text>
+              <Text style={styles.scoreValue}>{dailyFootprint.toFixed(1)}</Text>
               <Text style={styles.unit}>kg CO₂</Text>
             </View>
 
             <View style={styles.comparisonBadge}>
-              <Ionicons name="arrow-down" size={13} color="#FFFFFF" />
+              <Ionicons name="arrow-down" size={14} color="#FFFFFF" />
               <Text style={styles.comparisonText}>12% vs yesterday</Text>
             </View>
           </View>
-        </View>
+        </LinearGradient>
 
-        {/* --- Weekly Trend Line Chart --- */}
+        {/* Weekly trend */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleGroup}>
               <View style={styles.sectionIconCircle}>
-                <MaterialCommunityIcons name="trending-up" size={20} color={BRAND_GREEN} />
+                <MaterialCommunityIcons
+                  name="chart-line"
+                  size={21}
+                  color={BRAND_GREEN}
+                />
               </View>
               <Text style={styles.sectionTitle}>Weekly Emission Trend</Text>
             </View>
 
             <TouchableOpacity activeOpacity={0.7} style={styles.filterButton}>
               <Text style={styles.filterText}>This Week</Text>
-              <Ionicons name="chevron-down" size={16} color={BRAND_GREEN} />
+              <Ionicons name="chevron-down" size={17} color={BRAND_GREEN} />
             </TouchableOpacity>
           </View>
 
@@ -129,28 +130,29 @@ const EcoTraceHome: React.FC = () => {
             <LineChart
               data={weeklyData}
               width={screenWidth - 44}
-              height={195}
+              height={220}
               segments={4}
               withShadow
               bezier
+              fromZero={false}
               chartConfig={{
                 backgroundColor: '#FFFFFF',
                 backgroundGradientFrom: '#FFFFFF',
                 backgroundGradientTo: '#FFFFFF',
                 fillShadowGradientFrom: '#1B8A16',
                 fillShadowGradientTo: '#FFFFFF',
-                fillShadowGradientFromOpacity: 0.18,
-                fillShadowGradientToOpacity: 0.0,
+                fillShadowGradientFromOpacity: 0.20,
+                fillShadowGradientToOpacity: 0,
                 decimalPlaces: 1,
                 color: () => BRAND_GREEN,
-                labelColor: () => '#666666',
+                labelColor: () => '#626262',
                 propsForDots: {
-                  r: '5',
+                  r: '4.5',
                   strokeWidth: '0',
                   fill: BRAND_GREEN,
                 },
                 propsForBackgroundLines: {
-                  stroke: '#EFEFEF',
+                  stroke: '#E9EDE9',
                   strokeWidth: 1,
                   strokeDasharray: '',
                 },
@@ -160,106 +162,78 @@ const EcoTraceHome: React.FC = () => {
           </View>
         </View>
 
-        {/* --- Live Activity Insights --- */}
+        {/* Live activity */}
         <View style={styles.sectionContainer}>
           <View style={styles.sectionHeaderRow}>
             <View style={styles.sectionTitleGroup}>
               <View style={styles.sectionIconCircle}>
-                <Ionicons name="stats-chart" size={18} color={BRAND_GREEN} />
+                <Ionicons name="stats-chart" size={20} color={BRAND_GREEN} />
               </View>
               <Text style={styles.sectionTitle}>Live Activity Insights</Text>
             </View>
           </View>
 
           <View style={styles.actionGrid}>
-            {/* Transport Tile */}
             <TouchableOpacity
-              activeOpacity={0.7}
+              activeOpacity={0.75}
               style={styles.actionCard}
               onPress={() => router.push('/(tabs)/start')}
             >
               <View style={styles.actionCardLeft}>
                 <View style={styles.iconPill}>
-                  <MaterialCommunityIcons name="car" size={26} color={BRAND_GREEN} />
+                  <MaterialCommunityIcons
+                    name="car"
+                    size={29}
+                    color={BRAND_GREEN}
+                  />
                 </View>
                 <Text style={styles.actionLabel}>Transport</Text>
                 <Text style={styles.actionSubLabel}>Start Tracking</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#222222" />
+              <Ionicons name="chevron-forward" size={22} color="#111111" />
             </TouchableOpacity>
 
-            {/* Electricity Tile */}
-            <TouchableOpacity activeOpacity={0.7} style={styles.actionCard}>
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={styles.actionCard}
+            >
               <View style={styles.actionCardLeft}>
                 <View style={styles.iconPill}>
-                  <Ionicons name="flash" size={24} color={BRAND_GREEN} />
+                  <Ionicons name="flash" size={27} color={BRAND_GREEN} />
                 </View>
                 <Text style={styles.actionLabel}>Electricity</Text>
                 <Text style={styles.actionSubLabel}>Smart Sync On</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color="#222222" />
+              <Ionicons name="chevron-forward" size={22} color="#111111" />
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* --- Environmental Context Card --- */}
+        {/* Environmental context */}
         <View style={styles.equivCard}>
-          <View style={styles.equivIllustration}>
-            <Svg width="128" height="106" viewBox="0 0 128 106">
-              {/* Soft green ground hill */}
-              <Path
-                d="M0 95 Q35 72 72 82 Q100 88 128 78 L128 106 L0 106 Z"
-                fill="#A7DC8A"
+          <View style={styles.environmentIllustration}>
+            <MaterialCommunityIcons
+              name="pine-tree"
+              size={47}
+              color="#3D9B43"
+              style={styles.treeIcon}
+            />
+            <View style={styles.globeWrap}>
+              <MaterialCommunityIcons
+                name="earth"
+                size={66}
+                color="#238D78"
               />
-              <Path
-                d="M0 100 Q45 84 95 96 L128 92 L128 106 L0 106 Z"
-                fill="#8BCE6B"
-              />
-              {/* Pine tree */}
-              <Rect x="25" y="68" width="5" height="22" rx="1.5" fill="#7D5A44" />
-              <Polygon points="27.5,20 11,48 44,48" fill="#4BA845" />
-              <Polygon points="27.5,33 8,62 47,62" fill="#3C9438" />
-              <Polygon points="27.5,47 6,74 49,74" fill="#2E7F2B" />
-
-              {/* Earth globe */}
-              <Circle cx="72" cy="60" r="28" fill="#42A68C" />
-              <G opacity="0.85">
-                <Path
-                  d="M55 44 Q64 40 68 48 Q72 56 64 62 Q56 66 52 56 Z"
-                  fill="#8AD48E"
-                />
-                <Path
-                  d="M78 38 Q88 42 90 52 Q84 58 76 54 Q72 48 78 38 Z"
-                  fill="#8AD48E"
-                />
-                <Path
-                  d="M70 64 Q82 62 88 72 Q82 82 70 80 Q64 74 70 64 Z"
-                  fill="#8AD48E"
-                />
-              </G>
-
-              {/* Leafy sprig */}
-              <Path
-                d="M110 85 Q111 60 114 40"
-                stroke="#3C9438"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                fill="none"
-              />
-              <Path
-                d="M111 72 C102 68 100 60 105 56 C110 60 112 66 111 72 Z"
-                fill="#60B84F"
-              />
-              <Path
-                d="M112 62 C119 57 122 49 117 45 C112 49 111 56 112 62 Z"
-                fill="#74C662"
-              />
-              <Path
-                d="M113 48 C108 42 110 34 115 32 C119 37 117 44 113 48 Z"
-                fill="#60B84F"
-              />
-            </Svg>
+            </View>
+            <MaterialCommunityIcons
+              name="sprout"
+              size={37}
+              color="#4A9D35"
+              style={styles.sproutIcon}
+            />
           </View>
+
+          <View style={styles.equivDivider} />
 
           <View style={styles.equivContent}>
             <Text style={styles.equivTitle}>Environmental Context</Text>
@@ -271,37 +245,6 @@ const EcoTraceHome: React.FC = () => {
         </View>
       </ScrollView>
 
-      {/* --- Bottom Navigation Bar --- */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity activeOpacity={0.7} style={styles.navItem}>
-          <Ionicons name="home" size={22} color={BRAND_GREEN} />
-          <Text style={[styles.navLabel, styles.navLabelActive]}>Home</Text>
-          <View style={styles.activeIndicator} />
-        </TouchableOpacity>
-
-        <TouchableOpacity activeOpacity={0.7} style={styles.navItem}>
-          <Ionicons name="stats-chart-outline" size={22} color="#1A1A1A" />
-          <Text style={styles.navLabel}>Stats</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          activeOpacity={0.85}
-          style={styles.centerFab}
-          onPress={() => router.push('/(tabs)/start')}
-        >
-          <Ionicons name="add" size={30} color="#FFFFFF" />
-        </TouchableOpacity>
-
-        <TouchableOpacity activeOpacity={0.7} style={styles.navItem}>
-          <Ionicons name="notifications-outline" size={22} color="#1A1A1A" />
-          <Text style={styles.navLabel}>Notifications</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity activeOpacity={0.7} style={styles.navItem}>
-          <Ionicons name="person-outline" size={22} color="#1A1A1A" />
-          <Text style={styles.navLabel}>Profile</Text>
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -309,28 +252,41 @@ const EcoTraceHome: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#FFFFFF',
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   scrollContent: {
-    paddingTop: 14,
+    paddingTop: 8,
     paddingBottom: 28,
   },
-
-  /* Main Impact Card */
+  greeting: {
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  greetingTitle: {
+    color: '#102C25',
+    fontSize: 27,
+    lineHeight: 33,
+    fontWeight: '800',
+    letterSpacing: -0.4,
+  },
+  greetingSubtitle: {
+    color: '#929292',
+    fontSize: 17,
+    marginTop: 2,
+  },
   scoreCard: {
     marginHorizontal: 18,
-    borderRadius: 24,
+    borderRadius: 25,
     paddingHorizontal: 22,
-    paddingTop: 20,
-    paddingBottom: 22,
+    paddingTop: 18,
+    paddingBottom: 21,
     overflow: 'hidden',
-    backgroundColor: '#177412',
-    elevation: 6,
+    elevation: 5,
     shadowColor: '#0E5C0B',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.22,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.20,
+    shadowRadius: 10,
   },
   cardDecorContainer: {
     position: 'absolute',
@@ -345,28 +301,28 @@ const styles = StyleSheet.create({
   scoreLabel: {
     color: '#FFFFFF',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 11,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 22,
     gap: 5,
   },
   statusText: {
-    color: BRAND_GREEN,
+    color: DARK_GREEN,
     fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginTop: 14,
+    marginTop: 7,
   },
   scoreValueWrap: {
     flexDirection: 'row',
@@ -374,42 +330,41 @@ const styles = StyleSheet.create({
   },
   scoreValue: {
     color: '#FFFFFF',
-    fontSize: 52,
+    fontSize: 58,
     fontWeight: '800',
-    lineHeight: 56,
+    lineHeight: 64,
+    letterSpacing: -1.2,
   },
   unit: {
     color: '#FFFFFF',
     fontSize: 20,
-    fontWeight: '600',
-    marginLeft: 6,
+    fontWeight: '700',
+    marginLeft: 7,
   },
   comparisonBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.19)',
+    paddingHorizontal: 11,
+    paddingVertical: 7,
+    borderRadius: 18,
     gap: 4,
-    marginBottom: 4,
+    marginBottom: 5,
   },
   comparisonText: {
     color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
-
-  /* Sections */
   sectionContainer: {
-    marginTop: 24,
+    marginTop: 23,
     paddingHorizontal: 18,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 14,
+    marginBottom: 13,
   },
   sectionTitleGroup: {
     flexDirection: 'row',
@@ -417,51 +372,48 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   sectionIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: LIGHT_GREEN_BG,
     justifyContent: 'center',
     alignItems: 'center',
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontWeight: '800',
+    color: TEXT_DARK,
+    letterSpacing: -0.2,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   filterText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
     color: BRAND_GREEN,
   },
-
-  /* Chart Card */
   chartCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 22,
-    paddingTop: 16,
-    paddingBottom: 6,
-    paddingHorizontal: 4,
+    borderRadius: 23,
+    paddingTop: 10,
+    paddingBottom: 2,
+    paddingHorizontal: 2,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#F0F2F0',
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.06,
+    shadowRadius: 7,
   },
   chartStyle: {
-    borderRadius: 16,
-    paddingRight: 28,
+    borderRadius: 17,
+    paddingRight: 25,
   },
-
-  /* Live Activity Insights */
   actionGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -469,78 +421,98 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     flex: 1,
+    minHeight: 143,
     backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
+    borderRadius: 22,
+    paddingVertical: 15,
+    paddingHorizontal: 17,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: '#F0F2F0',
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowOpacity: 0.06,
+    shadowRadius: 7,
   },
   actionCardLeft: {
     flex: 1,
   },
   iconPill: {
-    width: 56,
-    height: 44,
-    borderRadius: 22,
+    width: 70,
+    height: 54,
+    borderRadius: 28,
     backgroundColor: LIGHT_GREEN_BG,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 9,
   },
   actionLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontSize: 16,
+    fontWeight: '800',
+    color: TEXT_DARK,
   },
   actionSubLabel: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#777777',
     marginTop: 3,
   },
-
-  /* Environmental Context Card */
   equivCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 18,
-    marginTop: 22,
+    marginTop: 23,
     borderRadius: 22,
+    padding: 13,
+    minHeight: 125,
     flexDirection: 'row',
     alignItems: 'center',
-    overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#F0F2F0',
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 8,
+    shadowRadius: 7,
   },
-  equivIllustration: {
-    width: 128,
-    height: 106,
-    backgroundColor: '#F6FAF6',
-    justifyContent: 'flex-end',
+  environmentIllustration: {
+    width: 145,
+    minHeight: 92,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  treeIcon: {
+    marginRight: -13,
+    marginTop: 16,
+  },
+  globeWrap: {
+    width: 67,
+    height: 72,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sproutIcon: {
+    marginLeft: -10,
+    marginTop: 16,
+  },
+  equivDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: '#D8E5D8',
+    marginHorizontal: 10,
   },
   equivContent: {
     flex: 1,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
+    paddingVertical: 5,
   },
   equivTitle: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
-    marginBottom: 6,
+    fontWeight: '800',
+    color: TEXT_DARK,
+    marginBottom: 5,
   },
   equivText: {
     fontSize: 13,
@@ -549,60 +521,7 @@ const styles = StyleSheet.create({
   },
   equivHighlight: {
     color: BRAND_GREEN,
-    fontWeight: '700',
-  },
-
-  /* Bottom Navigation */
-  bottomNav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#EFEFEF',
-    elevation: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-  },
-  navItem: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 56,
-  },
-  navLabel: {
-    fontSize: 11,
-    color: '#222222',
-    marginTop: 4,
-    fontWeight: '500',
-  },
-  navLabelActive: {
-    color: BRAND_GREEN,
-    fontWeight: '700',
-  },
-  activeIndicator: {
-    width: 44,
-    height: 3,
-    backgroundColor: BRAND_GREEN,
-    borderRadius: 2,
-    marginTop: 4,
-  },
-  centerFab: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: BRAND_GREEN,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#0E5C0B',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
+    fontWeight: '800',
   },
 });
 
