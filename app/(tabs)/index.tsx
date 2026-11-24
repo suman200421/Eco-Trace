@@ -5,16 +5,15 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   Dimensions,
   TouchableOpacity,
   StatusBar,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Path, Circle, Polygon, Rect, G } from 'react-native-svg';
+import Svg, { Path, Circle, Polygon, Rect, G, Defs, LinearGradient as SvgLinearGradient, Stop } from 'react-native-svg';
 
 const screenWidth = Dimensions.get('window').width;
 const BRAND_GREEN = '#117A0E';
@@ -43,12 +42,20 @@ const EcoTraceHome: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
       >
         {/* --- Main Impact Card --- */}
-        <LinearGradient
-          colors={['#2E9322', '#177412', '#0E5C0B']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.scoreCard}
-        >
+        <View style={styles.scoreCard}>
+          {/* Background Gradient (SVG-based for universal cross-platform compatibility) */}
+          <View style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Svg width="100%" height="100%">
+              <Defs>
+                <SvgLinearGradient id="scoreCardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <Stop offset="0%" stopColor="#2E9322" stopOpacity="1" />
+                  <Stop offset="50%" stopColor="#177412" stopOpacity="1" />
+                  <Stop offset="100%" stopColor="#0E5C0B" stopOpacity="1" />
+                </SvgLinearGradient>
+              </Defs>
+              <Rect width="100%" height="100%" fill="url(#scoreCardGrad)" />
+            </Svg>
+          </View>
           {/* Decorative background curve & sprout */}
           <View style={styles.cardDecorContainer} pointerEvents="none">
             <Svg width="200" height="160" viewBox="0 0 200 160">
@@ -100,7 +107,7 @@ const EcoTraceHome: React.FC = () => {
               <Text style={styles.comparisonText}>12% vs yesterday</Text>
             </View>
           </View>
-        </LinearGradient>
+        </View>
 
         {/* --- Weekly Trend Line Chart --- */}
         <View style={styles.sectionContainer}>
@@ -318,6 +325,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     paddingBottom: 22,
     overflow: 'hidden',
+    backgroundColor: '#177412',
     elevation: 6,
     shadowColor: '#0E5C0B',
     shadowOffset: { width: 0, height: 6 },

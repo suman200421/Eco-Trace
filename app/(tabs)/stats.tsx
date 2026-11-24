@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   RefreshControl,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { API_BASE_URL, getSession } from '../../lib/auth';
 import { Period, StatsData } from '../../components/stats/types';
 import { TabSwitcher } from '../../components/stats/TabSwitcher';
